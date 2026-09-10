@@ -68,25 +68,54 @@ const steps = ref([
   }
 ])
 
-const dynamicPayload = computed(() => {
-  const isUrgent = userPrompt.value.toLowerCase().includes('urgent') || userPrompt.value.toLowerCase().includes('dispute') || userPrompt.value.toLowerCase().includes('enterprise')
-  const score = isUrgent ? 96 : 74
-  const tier = userPrompt.value.toLowerCase().includes('dispute') ? 'RISK_MITIGATION' : isUrgent ? 'P0_ENTERPRISE' : 'STANDARD_TIER'
+const parsedIntent = computed(() => {
+  const text = userPrompt.value.toLowerCase()
+  const isDispute = text.includes('dispute') || text.includes('chargeback') || text.includes('refund') || text.includes('fraud')
+  const isUrgent = text.includes('urgent') || text.includes('asap') || text.includes('enterprise') || text.includes('lead') || text.includes('mvp') || text.includes('$') || text.includes('critical')
 
+  if (isDispute) {
+    return {
+      tier: 'RISK_MITIGATION',
+      score: 98,
+      route: 'Route: Risk Mitigation & Legal Webhook',
+      badgeClass: 'text-rose-600 dark:text-rose-400 bg-rose-500/10 border-rose-500/30'
+    }
+  } else if (isUrgent) {
+    return {
+      tier: 'P0_ENTERPRISE',
+      score: 95,
+      route: 'Route: VIP Slack Channel & Lead Dispatch',
+      badgeClass: 'text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30'
+    }
+  } else {
+    return {
+      tier: 'STANDARD_INQUIRY',
+      score: 68,
+      route: 'Route: Standard CRM Ingestion Queue',
+      badgeClass: 'text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 border-cyan-500/30'
+    }
+  }
+})
+
+const dynamicPayload = computed(() => {
   return JSON.stringify({
     event: "pipeline.executed",
     timestamp_utc: new Date().toISOString(),
     execution_time_ms: 416,
     input_text: userPrompt.value,
     extracted_entities: {
-      urgency_score: score,
-      classification: tier,
-      detected_intent: userPrompt.value.slice(0, 50) + (userPrompt.value.length > 50 ? '...' : ''),
+      urgency_score: parsedIntent.value.score,
+      classification: parsedIntent.value.tier,
+      detected_intent: userPrompt.value.slice(0, 60) + (userPrompt.value.length > 60 ? '...' : ''),
       assigned_engineer: "Weijun Chen (Lead)"
     },
     pipeline_actions: [
       "webhook_signature_verified_256",
-      tier === 'P0_ENTERPRISE' ? "slack_vip_channel_alert_sent" : "crm_lead_queued",
+      parsedIntent.value.tier === 'P0_ENTERPRISE' 
+        ? "slack_vip_channel_alert_sent" 
+        : parsedIntent.value.tier === 'RISK_MITIGATION'
+        ? "risk_legal_escalation_dispatched"
+        : "crm_lead_queued",
       "postgres_vector_record_upserted"
     ]
   }, null, 2)
@@ -154,7 +183,7 @@ const copyJson = () => {
         >
           <RotateCw v-if="isExecuting" class="w-3.5 h-3.5 animate-spin" />
           <Play v-else class="w-3.5 h-3.5 fill-current" />
-          <span>{{ isExecuting ? 'Running DAG Nodes...' : '▶ Execute Pipeline' }}</span>
+          <span>{{ isExecuting ? 'Running DAG Nodes...' : 'Execute Pipeline' }}</span>
         </button>
       </div>
     </div>
@@ -262,6 +291,22 @@ const copyJson = () => {
             <p class="text-[11px] text-zinc-500 dark:text-zinc-500 mt-1.5 leading-relaxed">
               {{ step.desc }}
             </p>
+
+            <!-- Dynamic Node Output Badge upon completion -->
+            <div v-if="step.status === 'done'" class="mt-2.5 pt-2 border-t border-zinc-200/60 dark:border-zinc-800/80">
+              <span v-if="idx === 0" class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-200/70 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300/60 dark:border-zinc-700/60 inline-block">
+                SHA-256 Validated
+              </span>
+              <span v-else-if="idx === 1" :class="['text-[10px] font-mono px-2 py-0.5 rounded border inline-block font-semibold', parsedIntent.badgeClass]">
+                Urgency: {{ parsedIntent.score }}/100
+              </span>
+              <span v-else-if="idx === 2" class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 inline-block">
+                {{ parsedIntent.route }}
+              </span>
+              <span v-else-if="idx === 3" class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/30 inline-block">
+                Vector DB Upserted
+              </span>
+            </div>
 
             <!-- Connector arrow for desktop -->
             <div 
