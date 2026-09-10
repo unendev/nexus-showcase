@@ -26,7 +26,7 @@ const toggleDropdown = () => {
 
 const copyProfileUrl = async () => {
   try {
-    await navigator.clipboard.writeText('https://www.upwork.com/freelancers/~018d96e5be7d478cf3')
+    await navigator.clipboard.writeText('https://www.upwork.com/freelancers/~01ffb45b4146dbd697')
     copied.value = true
     setTimeout(() => {
       copied.value = false
@@ -185,7 +185,7 @@ onMounted(() => {
 
               <div class="pt-3 flex flex-col gap-2">
                 <a 
-                  href="https://www.upwork.com/freelancers/~018d96e5be7d478cf3" 
+                  href="https://www.upwork.com/freelancers/~01ffb45b4146dbd697" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   class="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-colors"
@@ -208,7 +208,7 @@ onMounted(() => {
 
         <!-- Quick Hire Direct CTA on Navbar -->
         <a 
-          href="https://www.upwork.com/freelancers/~018d96e5be7d478cf3" 
+          href="https://www.upwork.com/freelancers/~01ffb45b4146dbd697" 
           target="_blank" 
           rel="noopener noreferrer"
           class="hidden sm:flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-xs font-mono transition-colors cursor-pointer font-medium"
